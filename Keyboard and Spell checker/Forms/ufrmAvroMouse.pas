@@ -26,8 +26,7 @@ uses
   StdCtrls,
   Buttons,
   ExtCtrls,
-  Winapi.GDIPAPI,
-  Winapi.GDIPOBJ;
+  System.Skia;
 
 type
   TfrmAvroMouse = class(TForm)
@@ -172,13 +171,14 @@ type
       procedure DetectRightClickOnTitleBar(var Msg: TWMNCLButtonDown); message WM_NCRBUTTONDOWN;
       procedure RegenerateGlyphs;
       procedure RenderGlyph(const ABtn: TBitBtn; const AText: string);
-      procedure GenerateGlyph(const ABtn: TBitBtn; const AText: string);
-      procedure AssignPngGlyph(const ABtn: TBitBtn; const APngPath: string);
-      function CreateGpFont(const ASizePx: Integer): TGPFont;
+      procedure BakeSvgGlyph(const ABtn: TBitBtn; const AText: string);
+      procedure AssignSvgGlyph(const ABtn: TBitBtn; const ASvgPath: string);
       function DisplayTextOf(const ABtn: TBitBtn): string;
       function ThemeColor(const ASysColor: TColor): TColor;
       function MouseGlyphDir: string;
+      function AssetMouseGlyphDir: string;
       procedure EnsureBanglaFont;
+      function BanglaFontFile: string;
     public
       { Public declarations }
     protected
@@ -202,7 +202,9 @@ uses
   WindowsDarkMode,
   uFileFolderHandling,
   Vcl.Themes,
-  Vcl.Imaging.pngimage;
+  System.Types,
+  System.RegularExpressions,
+  System.IOUtils;
 
 const
   Show_Window_in_Taskbar = True;
@@ -354,24 +356,31 @@ end;
 
 procedure TfrmAvroMouse.EnsureBanglaFont;
 var
-  ExeDir, Path: string;
+  Path: string;
+begin
+  Path := BanglaFontFile;
+  if Path <> '' then
+    AddFontResourceEx(PChar(Path), FR_PRIVATE, nil);
+end;
+
+function TfrmAvroMouse.BanglaFontFile: string;
+var
+  ExeDir: string;
   I: Integer;
 begin
   ExeDir := ExtractFilePath(ParamStr(0));
   for I := 0 to 3 do
   begin
     case I of
-      0: Path := ExeDir + 'kalpurush.ttf';
-      1: Path := ExeDir + 'fonts\kalpurush.ttf';
-      2: Path := ExeDir + '..\..\assets\fonts\kalpurush.ttf';
-      3: Path := GetAvroDataDir + 'fonts\kalpurush.ttf';
+      0: Result := ExeDir + 'kalpurush.ttf';
+      1: Result := ExeDir + 'fonts\kalpurush.ttf';
+      2: Result := ExeDir + '..\assets\fonts\kalpurush.ttf';
+      3: Result := GetAvroDataDir + 'fonts\kalpurush.ttf';
     end;
-    if FileExists(Path) then
-    begin
-      AddFontResourceEx(PChar(Path), FR_PRIVATE, nil);
-      Break;
-    end;
+    if FileExists(Result) then
+      Exit;
   end;
+  Result := '';
 end;
 
 function TfrmAvroMouse.DisplayTextOf(const ABtn: TBitBtn): string;
@@ -420,77 +429,30 @@ begin
   Result := ExtractFilePath(ParamStr(0)) + 'mouse-glyphs\';
 end;
 
-function TfrmAvroMouse.CreateGpFont(const ASizePx: Integer): TGPFont;
-var
-  MemDc: HDC;
-  Lf: TLogFont;
-  HF: HFONT;
-  Bmp: HBITMAP;
-  OldBmp, OldFont: HGDIOBJ;
+function TfrmAvroMouse.AssetMouseGlyphDir: string;
 begin
-  Result := nil;
-  MemDc := CreateCompatibleDC(0);
-  if MemDc = 0 then
-    Exit;
-  try
-    Bmp := CreateCompatibleBitmap(MemDc, 1, 1);
-    if Bmp = 0 then
-      Exit;
-    try
-      OldBmp := SelectObject(MemDc, Bmp);
-      ZeroMemory(@Lf, SizeOf(Lf));
-      Lf.lfHeight   := -ASizePx;
-      Lf.lfWeight   := FW_NORMAL;
-      Lf.lfCharSet  := DEFAULT_CHARSET;
-      Lf.lfQuality  := ANTIALIASED_QUALITY;
-      Lf.lfPitchAndFamily := DEFAULT_PITCH;
-      StrPLCopy(Lf.lfFaceName, 'Kalpurush', LF_FACESIZE - 1);
-      HF := CreateFontIndirect(Lf);
-      if HF = 0 then
-        Exit;
-      try
-        OldFont := SelectObject(MemDc, HF);
-        Result := TGPFont.Create(MemDc);
-        SelectObject(MemDc, OldFont);
-      finally
-        DeleteObject(HF);
-      end;
-      SelectObject(MemDc, OldBmp);
-    finally
-      DeleteObject(Bmp);
-    end;
-  finally
-    DeleteDC(MemDc);
-  end;
+  Result := ExtractFilePath(ParamStr(0)) + '..\assets\mouse-glyphs\';
 end;
 
-procedure TfrmAvroMouse.GenerateGlyph(const ABtn: TBitBtn; const AText: string);
-const
-  MaskColor = clFuchsia;
+procedure TfrmAvroMouse.BakeSvgGlyph(const ABtn: TBitBtn; const AText: string);
 var
   W, H: Integer;
-  InkC, FaceC: TColor;
-  InR, InG, InB: Byte;
-  FaR, FaG, FaB: Byte;
-  GpBmp: TGPBitmap;
-  GpGfx: TGPGraphics;
-  GpFmt: TGPStringFormat;
-  GpBrush: TGPSolidBrush;
-  FontObj: TGPFont;
-  SizePx: Integer;
+  FontFile: string;
+  Typeface: ISkTypeface;
+  Provider: ISkTypefaceFontProvider;
+  ParStyle: ISkParagraphStyle;
+  TextStyle: ISkTextStyle;
+  Builder: ISkParagraphBuilder;
+  Par: ISkParagraph;
+  SizePx: Single;
   S: string;
   NeedBase: Boolean;
-  Box: TGPRectF;
-  TotalW, BaseW, MarkW: Single;
-  X0, BaseX, OffsetY: Single;
-  BaseLeft, BaseWidth: Integer;
-  Data: TBitmapData;
-  LockRect: TGPRect;
-  Y, X, Alpha: Integer;
-  Row, Px: PByte;
-  Key: TBitmap;
-  Png: TPngImage;
-  KP, AP: PByteArray;
+  Stream: TMemoryStream;
+  SvgCanvas: ISkCanvas;
+  Metrics: TSkMetrics;
+  OffsetX, OffsetY: Single;
+  Buf: TBytes;
+  SvgStr: string;
 
   function IsCombiningMark(C: WideChar): Boolean;
   begin
@@ -502,33 +464,22 @@ var
       (C = #$09E2) or (C = #$09E3);
   end;
 
-  function IsPreBaseMatra(C: WideChar): Boolean;
-  begin
-    Result := (C = #$09BF) or (C = #$09C7) or (C = #$09C8) or
-              (C = #$09CB) or (C = #$09CC);
-  end;
-
-  function MeasureW(const AString: string): Single;
-  begin
-    Box := MakeRect(0.0, 0.0, 0.0, 0.0);
-    GpGfx.MeasureString(AString, -1, FontObj, Box, GpFmt, Box);
-    Result := Box.Width;
-  end;
-
 begin
   if (AText = '') or (ABtn.ClientWidth <= 0) or (ABtn.ClientHeight <= 0) then
     Exit;
   W := ABtn.ClientWidth;
   H := ABtn.ClientHeight;
 
-  InkC := ThemeColor(clBtnText);
-  InR := GetRValue(InkC);
-  InG := GetGValue(InkC);
-  InB := GetBValue(InkC);
-  FaceC := ThemeColor(clBtnFace);
-  FaR := GetRValue(FaceC);
-  FaG := GetGValue(FaceC);
-  FaB := GetBValue(FaceC);
+  FontFile := BanglaFontFile;
+  if FontFile = '' then
+    Exit;
+
+  Typeface := TSkTypeface.MakeFromFile(FontFile, 0);
+  if Typeface = nil then
+    Exit;
+
+  Provider := TSkTypefaceFontProvider.Create;
+  Provider.RegisterTypeface(Typeface, 'Kalpurush');
 
   NeedBase := IsCombiningMark(AText[1]);
   if NeedBase then
@@ -536,255 +487,140 @@ begin
   else
     S := AText;
 
-  GpBmp   := TGPBitmap.Create(W, H, PixelFormat32bppARGB);
-  GpGfx   := TGPGraphics.Create(GpBmp);
-  GpFmt   := TGPStringFormat.Create;
-  GpBrush := TGPSolidBrush.Create(MakeColor(255, InR, InG, InB));
+  ParStyle := TSkParagraphStyle.Create;
+  TextStyle := TSkTextStyle.Create;
+  TextStyle.SetFontFamilies(['Kalpurush']);
+  TextStyle.SetColor($FF000000);
+
+  { Find the largest font size whose shaped text fits inside the button box. }
+  SizePx := H;
+  Par := nil;
+  while SizePx >= 5 do
+  begin
+    TextStyle.SetFontSize(SizePx);
+    Builder := TSkParagraphBuilder.Create(ParStyle, Provider, True);
+    Builder.PushStyle(TextStyle);
+    Builder.AddText(S);
+    Builder.Pop;
+    Par := Builder.Build;
+    Par.Layout(W);
+    if (Par.LongestLine <= W) and (Par.Height <= H) then
+      Break;
+    SizePx := SizePx - 1;
+  end;
+
+  if (Par = nil) or (Length(Par.LineMetrics) = 0) then
+    Exit;
+  Metrics := Par.LineMetrics[0];
+
+  { Center the single line inside the button box. Paint(AX, AY) places the
+    paragraph layout origin at (AX, AY), so we offset by half the slack. }
+  OffsetX := (W - Metrics.Width) / 2 - Metrics.Left;
+  OffsetY := (H - Metrics.Height) / 2;
+
+  Stream := TMemoryStream.Create;
   try
-    GpGfx.SetSmoothingMode(SmoothingModeAntiAlias);
-    GpGfx.SetTextRenderingHint(TextRenderingHintAntiAlias);
-    GpGfx.Clear(MakeColor(0, 0, 0, 0));
-
-    SizePx := H;
-    repeat
-      FontObj := CreateGpFont(SizePx);
-      Box := MakeRect(0.0, 0.0, 0.0, 0.0);
-      GpGfx.MeasureString(S, -1, FontObj, Box, GpFmt, Box);
-      if ((Box.Width <= W) and (Box.Height <= H)) or (SizePx <= 5) then
-        Break;
-      FontObj.Free;
-      Dec(SizePx);
-    until False;
-
+    SvgCanvas := TSkSVGCanvas.Make(RectF(0, 0, W, H), Stream,
+      [TSkSVGCanvasFlag.ConvertTextToPaths, TSkSVGCanvasFlag.NoPrettyXML,
+       TSkSVGCanvasFlag.RelativePathEncoding]);
     try
-      TotalW := MeasureW(S);
-      if NeedBase then
-      begin
-        BaseW := MeasureW(b_K);
-        MarkW := MeasureW(AText);
-        if IsPreBaseMatra(AText[1]) then
-        begin
-          BaseX := TotalW - BaseW;
-          X0    := (W - MarkW) / 2.0;
-        end
-        else
-        begin
-          BaseX := 0.0;
-          X0    := (W - MarkW) / 2.0 - BaseW;
-        end;
-      end
-      else
-      begin
-        BaseX := 0.0;
-        X0    := (W - TotalW) / 2.0;
-      end;
-
-      Box := MakeRect(0.0, 0.0, 0.0, 0.0);
-      GpGfx.MeasureString(S, -1, FontObj, Box, GpFmt, Box);
-      OffsetY := (H - Box.Height) / 2.0 - Box.Y;
-
-      GpGfx.DrawString(S, -1, FontObj, MakePoint(X0, OffsetY), GpFmt, GpBrush);
+      Par.Paint(SvgCanvas, OffsetX, OffsetY);
     finally
-      FontObj.Free;
+      SvgCanvas := nil;
     end;
+    ForceDirectories(AssetMouseGlyphDir);
 
-    if NeedBase then
-    begin
-      BaseLeft  := Round(X0 + BaseX);
-      BaseWidth := Round(BaseW);
-    end
-    else
-    begin
-      BaseLeft  := 0;
-      BaseWidth := 0;
-    end;
-
-    Png := TPngImage.CreateBlank(COLOR_RGBALPHA, 8, W, H);
-    try
-      Key := TBitmap.Create;
-      try
-        Key.PixelFormat := pf32bit;
-        Key.Width       := W;
-        Key.Height      := H;
-        Key.Canvas.Brush.Color := MaskColor;
-        Key.Canvas.FillRect(Rect(0, 0, W, H));
-
-        LockRect := MakeRect(0, 0, W, H);
-        Data := Default(TBitmapData);
-        if GpBmp.LockBits(LockRect, ImageLockModeRead, PixelFormat32bppARGB, Data) = Ok then
-        begin
-          try
-            for Y := 0 to H - 1 do
-            begin
-              Row := PByte(NativeUInt(Data.Scan0) + NativeUInt(Y * Data.Stride));
-              KP  := Key.ScanLine[Y];
-              AP  := Png.AlphaScanline[Y];
-              for X := 0 to W - 1 do
-              begin
-                Px := PByte(NativeUInt(Row) + NativeUInt(X * 4));
-                Alpha := PByte(NativeUInt(Px) + 3)^;
-
-                if (BaseWidth > 0) and (X >= BaseLeft) and
-                   (X < BaseLeft + BaseWidth) and (Alpha < 128) then
-                  Alpha := 0;
-
-                AP[X] := Byte(Alpha);
-                Png.Pixels[X, Y] := RGB(0, 0, 0);
-
-                if Alpha = 0 then
-                begin
-                  KP[X * 4]     := $FF;
-                  KP[X * 4 + 1] := 0;
-                  KP[X * 4 + 2] := $FF;
-                end
-                else
-                begin
-                  KP[X * 4]     := (Alpha * InB + (255 - Alpha) * FaB) div 255;
-                  KP[X * 4 + 1] := (Alpha * InG + (255 - Alpha) * FaG) div 255;
-                  KP[X * 4 + 2] := (Alpha * InR + (255 - Alpha) * FaR) div 255;
-                end;
-              end;
-            end;
-          finally
-            GpBmp.UnlockBits(Data);
-          end;
-        end;
-
-        Key.Canvas.Pixels[0, H - 1]     := MaskColor;
-        Key.Canvas.Pixels[W - 1, H - 1] := MaskColor;
-        Key.Canvas.Pixels[0, 0]         := MaskColor;
-
-        try
-          ForceDirectories(MouseGlyphDir);
-          Png.SaveToFile(MouseGlyphDir + ABtn.Name + '.png');
-        except
-          on E: Exception do
-            begin
-            end;
-        end;
-
-        ABtn.Glyph.Assign(Key);
-        ABtn.Glyph.Transparent      := True;
-        ABtn.Glyph.TransparentColor := MaskColor;
-      finally
-        Key.Free;
-      end;
-    finally
-      Png.Free;
-    end;
+    { Round path coordinates to 2 decimal places - Skia emits full float32
+      precision (~17 chars per number) which bloats the SVG for no visual
+      benefit at these small viewBox sizes. }
+    Stream.Position := 0;
+    SetLength(Buf, Stream.Size);
+    Stream.ReadBuffer(Pointer(Buf)^, Stream.Size);
+    SvgStr := TEncoding.UTF8.GetString(Buf);
+    SvgStr := TRegEx.Replace(SvgStr, '(\d+\.\d{2})\d+', '$1');
+    TFile.WriteAllText(AssetMouseGlyphDir + ABtn.Name + '.svg', SvgStr, TEncoding.UTF8);
   finally
-    GpBrush.Free;
-    GpFmt.Free;
-    GpGfx.Free;
-    GpBmp.Free;
+    Stream.Free;
   end;
 end;
 
-procedure TfrmAvroMouse.AssignPngGlyph(const ABtn: TBitBtn; const APngPath: string);
+procedure TfrmAvroMouse.AssignSvgGlyph(const ABtn: TBitBtn; const ASvgPath: string);
 const
   MaskColor = clFuchsia;
 var
-  Png: TPngImage;
-  Key: TBitmap;
-  W, H, X, Y: Integer;
-  KP:   PByteArray;
-  AP:   PByteArray;
-  Alpha: Integer;
+  W, H: Integer;
+  InkC, FaceC: TColor;
   InR, InG, InB: Byte;
   FaR, FaG, FaB: Byte;
-  C, KeyCol: TColor;
-  HasAlpha: Boolean;
+  DOM: ISkSVGDOM;
+  Surface: ISkSurface;
+  Pixmap: ISkPixmap;
+  X, Y, Alpha: Integer;
+  Px: PByte;
+  KP: PByteArray;
+  Key: TBitmap;
 begin
-  Png := TPngImage.Create;
+  W := ABtn.ClientWidth;
+  H := ABtn.ClientHeight;
+  if (W <= 0) or (H <= 0) then
+    Exit;
+
+  DOM := TSkSVGDOM.MakeFromFile(ASvgPath);
+  if DOM = nil then
+    Exit;
+
+  InkC := ThemeColor(clBtnText);
+  InR := GetRValue(InkC);  InG := GetGValue(InkC);  InB := GetBValue(InkC);
+  FaceC := ThemeColor(clBtnFace);
+  FaR := GetRValue(FaceC);  FaG := GetGValue(FaceC);  FaB := GetBValue(FaceC);
+
+  Surface := TSkSurface.MakeRaster(W, H);
+  Surface.Canvas.Clear($00000000);
+  DOM.SetContainerSize(TSizeF.Create(W, H));
+  DOM.Render(Surface.Canvas);
+  Pixmap := Surface.PeekPixels;
+  if Pixmap = nil then
+    Exit;
+
+  Key := TBitmap.Create;
   try
-    Png.LoadFromFile(APngPath);
-    W := Png.Width;
-    H := Png.Height;
-    if (W <= 0) or (H <= 0) then
-      Exit;
+    Key.PixelFormat := pf32bit;
+    Key.Width       := W;
+    Key.Height      := H;
+    Key.Canvas.Brush.Color := MaskColor;
+    Key.Canvas.FillRect(Rect(0, 0, W, H));
 
-    C := ThemeColor(clBtnText);
-    InR := GetRValue(C);
-    InG := GetGValue(C);
-    InB := GetBValue(C);
-    C := ThemeColor(clBtnFace);
-    FaR := GetRValue(C);
-    FaG := GetGValue(C);
-    FaB := GetBValue(C);
-
-    HasAlpha := (Png.Header.ColorType = COLOR_RGBALPHA) or
-                (Png.Header.ColorType = COLOR_GRAYSCALEALPHA);
-
-    Key := TBitmap.Create;
-    try
-      Key.PixelFormat := pf32bit;
-      Key.Width       := W;
-      Key.Height      := H;
-      Key.Canvas.Brush.Color := MaskColor;
-      Key.Canvas.FillRect(Rect(0, 0, W, H));
-
-      if HasAlpha then
+    for Y := 0 to H - 1 do
+    begin
+      KP := Key.ScanLine[Y];
+      for X := 0 to W - 1 do
       begin
-        for Y := 0 to H - 1 do
+        Px := PByte(Pixmap.GetPixelAddr(X, Y));
+        Alpha := PByte(NativeUInt(Px) + 3)^;
+        if Alpha = 0 then
         begin
-          KP := Key.ScanLine[Y];
-          AP := Png.AlphaScanline[Y];
-          for X := 0 to W - 1 do
-          begin
-            Alpha := AP[X];
-            if Alpha <= 0 then
-            begin
-              KP[X * 4]     := $FF;
-              KP[X * 4 + 1] := 0;
-              KP[X * 4 + 2] := $FF;
-            end
-            else
-            begin
-              KP[X * 4]     := (Alpha * InB + (255 - Alpha) * FaB) div 255;
-              KP[X * 4 + 1] := (Alpha * InG + (255 - Alpha) * FaG) div 255;
-              KP[X * 4 + 2] := (Alpha * InR + (255 - Alpha) * FaR) div 255;
-            end;
-          end;
-        end;
-      end
-      else
-      begin
-        { No alpha channel: use a colour key from the bottom-left pixel }
-        KeyCol := Png.Pixels[0, H - 1];
-        for Y := 0 to H - 1 do
+          KP[X * 4]     := $FF;
+          KP[X * 4 + 1] := 0;
+          KP[X * 4 + 2] := $FF;
+        end
+        else
         begin
-          KP := Key.ScanLine[Y];
-          for X := 0 to W - 1 do
-          begin
-            C := Png.Pixels[X, Y];
-            if C = KeyCol then
-            begin
-              KP[X * 4]     := $FF;
-              KP[X * 4 + 1] := 0;
-              KP[X * 4 + 2] := $FF;
-            end
-            else
-            begin
-              KP[X * 4]     := InB;
-              KP[X * 4 + 1] := InG;
-              KP[X * 4 + 2] := InR;
-            end;
-          end;
+          KP[X * 4]     := (Alpha * InB + (255 - Alpha) * FaB) div 255;
+          KP[X * 4 + 1] := (Alpha * InG + (255 - Alpha) * FaG) div 255;
+          KP[X * 4 + 2] := (Alpha * InR + (255 - Alpha) * FaR) div 255;
         end;
       end;
-
-      Key.Canvas.Pixels[0, H - 1]     := MaskColor;
-      Key.Canvas.Pixels[W - 1, H - 1] := MaskColor;
-      Key.Canvas.Pixels[0, 0]         := MaskColor;
-
-      ABtn.Glyph.Assign(Key);
-      ABtn.Glyph.Transparent      := True;
-      ABtn.Glyph.TransparentColor := MaskColor;
-    finally
-      Key.Free;
     end;
+
+    Key.Canvas.Pixels[0, H - 1]     := MaskColor;
+    Key.Canvas.Pixels[W - 1, H - 1] := MaskColor;
+    Key.Canvas.Pixels[0, 0]         := MaskColor;
+
+    ABtn.Glyph.Assign(Key);
+    ABtn.Glyph.Transparent      := True;
+    ABtn.Glyph.TransparentColor := MaskColor;
   finally
-    Png.Free;
+    Key.Free;
   end;
 end;
 
@@ -795,12 +631,18 @@ begin
   if (AText = '') or (ABtn.ClientWidth <= 0) or (ABtn.ClientHeight <= 0) then
     Exit;
 
-  Path := MouseGlyphDir + ABtn.Name + '.png';
+  Path := MouseGlyphDir + ABtn.Name + '.svg';
   if FileExists(Path) then
-    AssignPngGlyph(ABtn, Path)
+    AssignSvgGlyph(ABtn, Path)
   else
-    GenerateGlyph(ABtn, AText);
+  begin
+    BakeSvgGlyph(ABtn, AText);
+    Path := AssetMouseGlyphDir + ABtn.Name + '.svg';
+    if FileExists(Path) then
+      AssignSvgGlyph(ABtn, Path);
+  end;
 end;
+
 
 procedure TfrmAvroMouse.RegenerateGlyphs;
 var

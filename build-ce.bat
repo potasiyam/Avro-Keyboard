@@ -61,6 +61,28 @@ if errorlevel 1 goto failed
 
 cd ..
 
+echo - Copying mouse glyph assets
+if exist assets\mouse-glyphs\*.svg (
+    if not exist build\mouse-glyphs mkdir build\mouse-glyphs
+    copy /y assets\mouse-glyphs\*.svg build\mouse-glyphs\ >nul
+    echo Copied mouse glyphs to build\mouse-glyphs
+) else (
+    echo Skipped - no assets\mouse-glyphs\*.svg found
+)
+
+echo - Copying Skia runtime (sk4d.dll)
+if defined BDS (
+    copy /y "%BDS%\bin64\sk4d.dll" build\ >nul 2>&1
+    if exist "%BDS%\bin64\sk4d.dll" echo Copied sk4d.dll from BDS
+) else (
+    if exist "C:\Program Files (x86)\Embarcadero\Studio\23.0\bin64\sk4d.dll" (
+        copy /y "C:\Program Files (x86)\Embarcadero\Studio\23.0\bin64\sk4d.dll" build\ >nul
+        echo Copied sk4d.dll from default BDS path
+    ) else (
+        echo WARNING - sk4d.dll not found, copy it manually next to the exe
+    )
+)
+
 echo All done!
 pause
 exit /b 0
