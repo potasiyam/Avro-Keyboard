@@ -37,7 +37,13 @@ The SVG + paths approach means one asset set covers all DPIs (no 1x/2x/3x varian
 - [ ] **Visual check**: glyphs render correctly in the Avro Mouse board, in both Light and Dark theme skins, at 100% and 200% DPI (PerMonitorV2)).
 - [ ] Verify a couple of complex conjuncts (e.g. ক্ষ, জ্ঞ, ষ্ণ) look correct — confirms shaping works through the Skia paragraph.
 - [ ] Confirm the runtime no longer writes PNGs and that `mouse-glyphs\` only holds `.svg`.
-- [ ] Stage and commit the branch (dproj, pas, build-).bat, .gitignore, task md).
+- [ ] Stage and commit the branch (dproj, pas, build-ce.bat, .gitignore, task md).
+- [ ] **Follow-up cleanup (later): remove the runtime generation code** once the committed SVGs are the source of truth:
+  - [ ] Drop the bake-on-first-run fallback in `RenderGlyph` — load only existing `.svg` files from `assets\mouse-glyphs\` (and the exe-adjacent copy).
+  - [ ] Remove `BakeSvgGlyph`, `BanglaFontFile`, and the `EnsureBanglaFont`/font-lookup wiring if no longer used elsewhere.
+  - [ ] Remove the now-unused Skia bake imports if the loader no longer needs `TSkParagraphBuilder`/`TSkSVGCanvas` (paragraph shaping + SVG canvas), keeping only what the loader needs (`TSkSVGDOM`, `TSkSurface`).
+  - [ ] Delete or keep the task file depending on whether the whole bake toolchain is kept for asset regeneration.
+- [ ] Optional: measure the Skia native dependency (sk4d.dll, Skia.Package.RTL290.bpl) in the release/zip/docs and document the added runtime dependency for end users.
 - [ ] Optional: measure the Skia native dependency (sk4d.dll, Skia.Package.RTL290.bpl) in the release/zip/docs and document the added runtime dependency for end users.
 - [ ] Optional: consider a single combined SVG with `<defs>/<symbol>` vs per-glyph files if size still matters.
 - [ ] Optional: pre-bake the SVGs into the data dir without running the app if a release-time tool is preferred over first-launch generation.
