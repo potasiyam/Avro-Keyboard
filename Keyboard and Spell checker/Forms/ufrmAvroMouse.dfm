@@ -61,8 +61,8 @@ object frmAvroMouse: TfrmAvroMouse
   OnCreate = FormCreate
   TextHeight = 13
   object Panel1: TPanel
-    Left = -1
-    Top = 0
+    Left = -3
+    Top = 1
     Width = 315
     Height = 155
     BevelEdges = []
@@ -6103,7 +6103,7 @@ object frmAvroMouse: TfrmAvroMouse
     Tag = 2433
     Left = 241
     Top = 122
-    Width = 32
+    Width = 28
     Height = 29
     Margins.Left = 0
     Margins.Top = 0

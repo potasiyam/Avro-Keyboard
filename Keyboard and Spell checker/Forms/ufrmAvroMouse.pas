@@ -632,15 +632,10 @@ begin
     Exit;
 
   Path := MouseGlyphDir + ABtn.Name + '.svg';
-  if FileExists(Path) then
-    AssignSvgGlyph(ABtn, Path)
-  else
-  begin
-    BakeSvgGlyph(ABtn, AText);
+  if not FileExists(Path) then
     Path := AssetMouseGlyphDir + ABtn.Name + '.svg';
-    if FileExists(Path) then
-      AssignSvgGlyph(ABtn, Path);
-  end;
+  if FileExists(Path) then
+    AssignSvgGlyph(ABtn, Path);
 end;
 
 
