@@ -171,14 +171,11 @@ type
       procedure DetectRightClickOnTitleBar(var Msg: TWMNCLButtonDown); message WM_NCRBUTTONDOWN;
       procedure RegenerateGlyphs;
       procedure RenderGlyph(const ABtn: TBitBtn; const AText: string);
-      procedure BakeSvgGlyph(const ABtn: TBitBtn; const AText: string);
       procedure AssignSvgGlyph(const ABtn: TBitBtn; const ASvgPath: string);
       function DisplayTextOf(const ABtn: TBitBtn): string;
       function ThemeColor(const ASysColor: TColor): TColor;
       function MouseGlyphDir: string;
       function AssetMouseGlyphDir: string;
-      procedure EnsureBanglaFont;
-      function BanglaFontFile: string;
     public
       { Public declarations }
     protected
@@ -202,9 +199,7 @@ uses
   WindowsDarkMode,
   uFileFolderHandling,
   Vcl.Themes,
-  System.Types,
-  System.RegularExpressions,
-  System.IOUtils;
+  System.Types;
 
 const
   Show_Window_in_Taskbar = True;
@@ -354,35 +349,6 @@ begin
   RegenerateGlyphs;
 end;
 
-procedure TfrmAvroMouse.EnsureBanglaFont;
-var
-  Path: string;
-begin
-  Path := BanglaFontFile;
-  if Path <> '' then
-    AddFontResourceEx(PChar(Path), FR_PRIVATE, nil);
-end;
-
-function TfrmAvroMouse.BanglaFontFile: string;
-var
-  ExeDir: string;
-  I: Integer;
-begin
-  ExeDir := ExtractFilePath(ParamStr(0));
-  for I := 0 to 3 do
-  begin
-    case I of
-      0: Result := ExeDir + 'kalpurush.ttf';
-      1: Result := ExeDir + 'fonts\kalpurush.ttf';
-      2: Result := ExeDir + '..\assets\fonts\kalpurush.ttf';
-      3: Result := GetAvroDataDir + 'fonts\kalpurush.ttf';
-    end;
-    if FileExists(Result) then
-      Exit;
-  end;
-  Result := '';
-end;
-
 function TfrmAvroMouse.DisplayTextOf(const ABtn: TBitBtn): string;
 begin
   if (ABtn.Tag = $200C) or (ABtn.Tag = $200D) then
@@ -432,116 +398,6 @@ end;
 function TfrmAvroMouse.AssetMouseGlyphDir: string;
 begin
   Result := ExtractFilePath(ParamStr(0)) + '..\assets\mouse-glyphs\';
-end;
-
-procedure TfrmAvroMouse.BakeSvgGlyph(const ABtn: TBitBtn; const AText: string);
-var
-  W, H: Integer;
-  FontFile: string;
-  Typeface: ISkTypeface;
-  Provider: ISkTypefaceFontProvider;
-  ParStyle: ISkParagraphStyle;
-  TextStyle: ISkTextStyle;
-  Builder: ISkParagraphBuilder;
-  Par: ISkParagraph;
-  SizePx: Single;
-  S: string;
-  NeedBase: Boolean;
-  Stream: TMemoryStream;
-  SvgCanvas: ISkCanvas;
-  Metrics: TSkMetrics;
-  OffsetX, OffsetY: Single;
-  Buf: TBytes;
-  SvgStr: string;
-
-  function IsCombiningMark(C: WideChar): Boolean;
-  begin
-    Result := (C = #$0981) or (C = #$09BC) or
-      ((C >= #$09BE) and (C <= #$09C4)) or
-      (C = #$09C7) or (C = #$09C8) or
-      (C = #$09CB) or (C = #$09CC) or
-      (C = #$09CD) or (C = #$09D7) or
-      (C = #$09E2) or (C = #$09E3);
-  end;
-
-begin
-  if (AText = '') or (ABtn.ClientWidth <= 0) or (ABtn.ClientHeight <= 0) then
-    Exit;
-  W := ABtn.ClientWidth;
-  H := ABtn.ClientHeight;
-
-  FontFile := BanglaFontFile;
-  if FontFile = '' then
-    Exit;
-
-  Typeface := TSkTypeface.MakeFromFile(FontFile, 0);
-  if Typeface = nil then
-    Exit;
-
-  Provider := TSkTypefaceFontProvider.Create;
-  Provider.RegisterTypeface(Typeface, 'Kalpurush');
-
-  NeedBase := IsCombiningMark(AText[1]);
-  if NeedBase then
-    S := b_K + AText
-  else
-    S := AText;
-
-  ParStyle := TSkParagraphStyle.Create;
-  TextStyle := TSkTextStyle.Create;
-  TextStyle.SetFontFamilies(['Kalpurush']);
-  TextStyle.SetColor($FF000000);
-
-  { Find the largest font size whose shaped text fits inside the button box. }
-  SizePx := H;
-  Par := nil;
-  while SizePx >= 5 do
-  begin
-    TextStyle.SetFontSize(SizePx);
-    Builder := TSkParagraphBuilder.Create(ParStyle, Provider, True);
-    Builder.PushStyle(TextStyle);
-    Builder.AddText(S);
-    Builder.Pop;
-    Par := Builder.Build;
-    Par.Layout(W);
-    if (Par.LongestLine <= W) and (Par.Height <= H) then
-      Break;
-    SizePx := SizePx - 1;
-  end;
-
-  if (Par = nil) or (Length(Par.LineMetrics) = 0) then
-    Exit;
-  Metrics := Par.LineMetrics[0];
-
-  { Center the single line inside the button box. Paint(AX, AY) places the
-    paragraph layout origin at (AX, AY), so we offset by half the slack. }
-  OffsetX := (W - Metrics.Width) / 2 - Metrics.Left;
-  OffsetY := (H - Metrics.Height) / 2;
-
-  Stream := TMemoryStream.Create;
-  try
-    SvgCanvas := TSkSVGCanvas.Make(RectF(0, 0, W, H), Stream,
-      [TSkSVGCanvasFlag.ConvertTextToPaths, TSkSVGCanvasFlag.NoPrettyXML,
-       TSkSVGCanvasFlag.RelativePathEncoding]);
-    try
-      Par.Paint(SvgCanvas, OffsetX, OffsetY);
-    finally
-      SvgCanvas := nil;
-    end;
-    ForceDirectories(AssetMouseGlyphDir);
-
-    { Round path coordinates to 2 decimal places - Skia emits full float32
-      precision (~17 chars per number) which bloats the SVG for no visual
-      benefit at these small viewBox sizes. }
-    Stream.Position := 0;
-    SetLength(Buf, Stream.Size);
-    Stream.ReadBuffer(Pointer(Buf)^, Stream.Size);
-    SvgStr := TEncoding.UTF8.GetString(Buf);
-    SvgStr := TRegEx.Replace(SvgStr, '(\d+\.\d{2})\d+', '$1');
-    TFile.WriteAllText(AssetMouseGlyphDir + ABtn.Name + '.svg', SvgStr, TEncoding.UTF8);
-  finally
-    Stream.Free;
-  end;
 end;
 
 procedure TfrmAvroMouse.AssignSvgGlyph(const ABtn: TBitBtn; const ASvgPath: string);
@@ -631,6 +487,10 @@ begin
   if (AText = '') or (ABtn.ClientWidth <= 0) or (ABtn.ClientHeight <= 0) then
     Exit;
 
+  { The dfm carries a Bangla caption per button for design-time readability;
+    clear it so the runtime shows only the SVG glyph. }
+  ABtn.Caption := '';
+
   Path := MouseGlyphDir + ABtn.Name + '.svg';
   if not FileExists(Path) then
     Path := AssetMouseGlyphDir + ABtn.Name + '.svg';
@@ -645,8 +505,6 @@ var
   Btn:  TBitBtn;
   Display: string;
 begin
-  EnsureBanglaFont;
-
   for I := 0 to ComponentCount - 1 do
     if Components[I] is TBitBtn then
     begin
