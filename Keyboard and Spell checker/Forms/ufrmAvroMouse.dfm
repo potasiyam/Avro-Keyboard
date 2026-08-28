@@ -3737,7 +3737,7 @@ object frmAvroMouse: TfrmAvroMouse
     object BitBtn62: TBitBtn
       Tag = 2534
       Left = 1
-      Top = 3
+      Top = 4
       Width = 25
       Height = 23
       Margins.Left = 0
@@ -4236,7 +4236,7 @@ object frmAvroMouse: TfrmAvroMouse
     object BitBtn71: TBitBtn
       Tag = 2539
       Left = 26
-      Top = 3
+      Top = 4
       Width = 25
       Height = 23
       Margins.Left = 0
