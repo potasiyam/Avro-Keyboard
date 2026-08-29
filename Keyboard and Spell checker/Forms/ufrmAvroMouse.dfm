@@ -692,6 +692,22 @@ object frmAvroMouse: TfrmAvroMouse
       TabStop = False
       OnClick = BitBtn1Click
     end
+    object BitBtn102: TBitBtn
+      Tag = 2433
+      Left = 241
+      Top = 122
+      Width = 32
+      Height = 29
+      Margins.Left = 0
+      Margins.Top = 0
+      Margins.Right = 0
+      Margins.Bottom = 0
+      Caption = #2433
+      Spacing = 0
+      TabOrder = 39
+      TabStop = False
+      OnClick = BitBtn1Click
+    end
   end
   object Panel2: TPanel
     Left = -11
@@ -1690,22 +1706,6 @@ object frmAvroMouse: TfrmAvroMouse
     TabStop = False
     OnClick = But_RFolaClick
   end
-  object BitBtn102: TBitBtn
-    Tag = 2433
-    Left = 238
-    Top = 123
-    Width = 32
-    Height = 29
-    Margins.Left = 0
-    Margins.Top = 0
-    Margins.Right = 0
-    Margins.Bottom = 0
-    Caption = #2433
-    Spacing = 0
-    TabOrder = 7
-    TabStop = False
-    OnClick = BitBtn1Click
-  end
   object BitBtn103: TBitBtn
     Tag = 8204
     Left = 576
@@ -1724,7 +1724,7 @@ object frmAvroMouse: TfrmAvroMouse
     Font.Style = [fsBold]
     ParentFont = False
     Spacing = 0
-    TabOrder = 8
+    TabOrder = 7
     TabStop = False
     OnClick = BitBtn1Click
   end
@@ -1740,7 +1740,7 @@ object frmAvroMouse: TfrmAvroMouse
     Margins.Bottom = 0
     Caption = #2547
     Spacing = 0
-    TabOrder = 9
+    TabOrder = 8
     TabStop = False
     OnClick = BitBtn1Click
   end
@@ -1756,7 +1756,7 @@ object frmAvroMouse: TfrmAvroMouse
     Margins.Bottom = 0
     Caption = #2544
     Spacing = 0
-    TabOrder = 10
+    TabOrder = 9
     TabStop = False
     OnClick = BitBtn1Click
   end
@@ -1772,7 +1772,7 @@ object frmAvroMouse: TfrmAvroMouse
     Margins.Bottom = 0
     Caption = #2545
     Spacing = 0
-    TabOrder = 11
+    TabOrder = 10
     TabStop = False
     OnClick = BitBtn1Click
   end
@@ -1789,7 +1789,7 @@ object frmAvroMouse: TfrmAvroMouse
     Font.Name = 'Tahoma'
     Font.Style = [fsBold]
     ParentFont = False
-    TabOrder = 12
+    TabOrder = 11
     TabStop = False
     OnClick = btnTabClick
   end
@@ -1806,7 +1806,7 @@ object frmAvroMouse: TfrmAvroMouse
     Font.Name = 'Tahoma'
     Font.Style = [fsBold]
     ParentFont = False
-    TabOrder = 13
+    TabOrder = 12
     TabStop = False
     OnClick = btnTabClick
   end
@@ -1823,7 +1823,7 @@ object frmAvroMouse: TfrmAvroMouse
     Font.Name = 'Tahoma'
     Font.Style = [fsBold]
     ParentFont = False
-    TabOrder = 14
+    TabOrder = 13
     TabStop = False
     OnClick = btnTabClick
   end
@@ -1840,7 +1840,7 @@ object frmAvroMouse: TfrmAvroMouse
     Font.Name = 'Tahoma'
     Font.Style = [fsBold]
     ParentFont = False
-    TabOrder = 15
+    TabOrder = 14
     TabStop = False
     OnClick = btnTabClick
   end
@@ -1878,7 +1878,7 @@ object frmAvroMouse: TfrmAvroMouse
     Margins.Bottom = 0
     Caption = #2404
     Spacing = 0
-    TabOrder = 17
+    TabOrder = 15
     TabStop = False
     OnClick = BitBtn1Click
   end

@@ -197,7 +197,8 @@ uses
   clsLayout,
   WindowsDarkMode,
   Vcl.Themes,
-  System.Types;
+  System.Types,
+  System.RegularExpressions;
 
 const
   Show_Window_in_Taskbar = True;
@@ -413,6 +414,60 @@ var
   Px: PByte;
   KP: PByteArray;
   Key: TBitmap;
+  RootW, RootH, FitScale: Single;
+
+  function LeadingNumber(const AValue: string; out ANumber: Single): Boolean;
+  var
+    M: TMatch;
+  begin
+    M := TRegEx.Match(AValue, '\s*([0-9]*\.?[0-9]+)');
+    Result := M.Success and
+      TryStrToFloat(M.Groups[1].Value, ANumber, TFormatSettings.Invariant);
+  end;
+
+  { True when the root <svg> tag carries explicit width/height attributes:
+    such documents render at a fixed size and ignore the container size. }
+  function TryRootSize(out AWidth, AHeight: Single): Boolean;
+  var
+    Svg: TStringList;
+    Tag, WStr, HStr: string;
+
+    function AttrValue(const ATag, AName: string): string;
+    var
+      M: TMatch;
+    begin
+      Result := '';
+      M := TRegEx.Match(ATag, '\b' + AName + '\s*=\s*["'']([^"'']+)');
+      if M.Success then
+        Result := M.Groups[1].Value;
+    end;
+
+  begin
+    Result := False;
+    AWidth := 0;
+    AHeight := 0;
+    Svg := TStringList.Create;
+    try
+      try
+        Svg.LoadFromFile(ASvgPath, TEncoding.UTF8);
+      except
+        Svg.Text := '';
+      end;
+      Tag := TRegEx.Match(Svg.Text, '<svg\b[^>]*').Value;
+      if Tag = '' then
+        Exit;
+      WStr := AttrValue(Tag, 'width');
+      HStr := AttrValue(Tag, 'height');
+      { Percentages are relative sizes, not fixed ones. }
+      if (Pos('%', WStr) > 0) or (Pos('%', HStr) > 0) then
+        Exit;
+      Result := LeadingNumber(WStr, AWidth) and LeadingNumber(HStr, AHeight) and
+        (AWidth > 0) and (AHeight > 0);
+    finally
+      Svg.Free;
+    end;
+  end;
+
 begin
   W := ABtn.ClientWidth;
   H := ABtn.ClientHeight;
@@ -431,7 +486,28 @@ begin
   Surface := TSkSurface.MakeRaster(W, H);
   Surface.Canvas.Clear($00000000);
   DOM.SetContainerSize(TSizeF.Create(W, H));
-  DOM.Render(Surface.Canvas);
+
+  { Fixed-size SVGs ignore the container and would render at design size
+    pinned to the top-left corner (visible as misalignment at high DPI).
+    Fit and center them on the canvas so they behave like viewBox-only
+    SVGs, which Skia scales and centers by itself. }
+  if TryRootSize(RootW, RootH) then
+  begin
+    FitScale := W / RootW;
+    if H / RootH < FitScale then
+      FitScale := H / RootH;
+    Surface.Canvas.Save;
+    try
+      Surface.Canvas.Translate((W - RootW * FitScale) / 2, (H - RootH * FitScale) / 2);
+      Surface.Canvas.Scale(FitScale, FitScale);
+      DOM.Render(Surface.Canvas);
+    finally
+      Surface.Canvas.Restore;
+    end;
+  end
+  else
+    DOM.Render(Surface.Canvas);
+
   Pixmap := Surface.PeekPixels;
   if Pixmap = nil then
     Exit;
