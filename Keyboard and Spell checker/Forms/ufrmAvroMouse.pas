@@ -169,7 +169,7 @@ type
       procedure DetectLeftClickOnTitleBar(var Msg: TWMNCLButtonDown); message WM_NCLBUTTONDOWN;
       procedure DetectRightClickOnTitleBar(var Msg: TWMNCLButtonDown); message WM_NCRBUTTONDOWN;
       procedure RegenerateGlyphs;
-      procedure RenderGlyph(const ABtn: TBitBtn; const AText: string);
+      procedure RenderGlyph(const ABtn: TBitBtn);
       procedure AssignSvgGlyph(const ABtn: TBitBtn; const ASvgPath: string);
       function DisplayTextOf(const ABtn: TBitBtn): string;
       function ThemeColor(const ASysColor: TColor): TColor;
@@ -196,7 +196,6 @@ uses
   uRegistrySettings,
   clsLayout,
   WindowsDarkMode,
-  uFileFolderHandling,
   Vcl.Themes,
   System.Types;
 
@@ -479,11 +478,11 @@ begin
   end;
 end;
 
-procedure TfrmAvroMouse.RenderGlyph(const ABtn: TBitBtn; const AText: string);
+procedure TfrmAvroMouse.RenderGlyph(const ABtn: TBitBtn);
 var
   Path: string;
 begin
-  if (AText = '') or (ABtn.ClientWidth <= 0) or (ABtn.ClientHeight <= 0) then
+  if (ABtn.ClientWidth <= 0) or (ABtn.ClientHeight <= 0) then
     Exit;
 
   { The dfm carries a Bangla caption per button for design-time readability;
@@ -510,7 +509,7 @@ begin
       Btn     := TBitBtn(Components[I]);
       Display := DisplayTextOf(Btn);
       if Display <> '' then
-        RenderGlyph(Btn, Display);
+        RenderGlyph(Btn);
     end;
 end;
 
