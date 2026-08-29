@@ -4,8 +4,8 @@ object frmAvroMouse: TfrmAvroMouse
   BorderIcons = [biSystemMenu, biMinimize]
   BorderStyle = bsSingle
   Caption = 'Avro Mouse - Click '#39'n Type!'
-  ClientHeight = 280
-  ClientWidth = 627
+  ClientHeight = 314
+  ClientWidth = 633
   Color = clBtnFace
   Font.Charset = DEFAULT_CHARSET
   Font.Color = clWindowText
@@ -1227,7 +1227,7 @@ object frmAvroMouse: TfrmAvroMouse
     Left = 5
     Top = 222
     Width = 620
-    Height = 51
+    Height = 85
     Caption = 'Extra Characters (Less used)'
     TabOrder = 3
     object BitBtn72: TBitBtn
@@ -1502,6 +1502,97 @@ object frmAvroMouse: TfrmAvroMouse
       TabStop = False
       OnClick = BitBtn1Click
     end
+    object BitBtn108: TBitBtn
+      Tag = 2555
+      Left = 4
+      Top = 50
+      Width = 33
+      Height = 30
+      Margins.Left = 0
+      Margins.Top = 0
+      Margins.Right = 0
+      Margins.Bottom = 0
+      Spacing = 0
+      TabOrder = 17
+      TabStop = False
+      OnClick = BitBtn1Click
+    end
+    object BitBtn109: TBitBtn
+      Tag = 2432
+      Left = 40
+      Top = 50
+      Width = 33
+      Height = 30
+      Margins.Left = 0
+      Margins.Top = 0
+      Margins.Right = 0
+      Margins.Bottom = 0
+      Spacing = 0
+      TabOrder = 18
+      TabStop = False
+      OnClick = BitBtn1Click
+    end
+    object BitBtn112: TBitBtn
+      Tag = 2556
+      Left = 76
+      Top = 50
+      Width = 33
+      Height = 30
+      Margins.Left = 0
+      Margins.Top = 0
+      Margins.Right = 0
+      Margins.Bottom = 0
+      Spacing = 0
+      TabOrder = 19
+      TabStop = False
+      OnClick = BitBtn1Click
+    end
+    object BitBtn110: TBitBtn
+      Tag = 2557
+      Left = 112
+      Top = 50
+      Width = 33
+      Height = 30
+      Margins.Left = 0
+      Margins.Top = 0
+      Margins.Right = 0
+      Margins.Bottom = 0
+      Spacing = 0
+      TabOrder = 20
+      TabStop = False
+      OnClick = BitBtn1Click
+    end
+    object BitBtn111: TBitBtn
+      Tag = 2558
+      Left = 148
+      Top = 50
+      Width = 33
+      Height = 30
+      Margins.Left = 0
+      Margins.Top = 0
+      Margins.Right = 0
+      Margins.Bottom = 0
+      Spacing = 0
+      TabOrder = 21
+      TabStop = False
+      OnClick = BitBtn1Click
+    end
+    object BitBtn114: TBitBtn
+      Tag = 73200
+      Left = 184
+      Top = 50
+      Width = 33
+      Height = 30
+      Margins.Left = 0
+      Margins.Top = 0
+      Margins.Right = 0
+      Margins.Bottom = 0
+      Caption = #55303#56816
+      Spacing = 0
+      TabOrder = 22
+      TabStop = False
+      OnClick = BitBtn1Click
+    end
   end
   object GroupBox2: TGroupBox
     Left = 377
@@ -1708,10 +1799,10 @@ object frmAvroMouse: TfrmAvroMouse
   end
   object BitBtn103: TBitBtn
     Tag = 8204
-    Left = 576
-    Top = 126
-    Width = 39
-    Height = 29
+    Left = 564
+    Top = 164
+    Width = 43
+    Height = 25
     Margins.Left = 0
     Margins.Top = 0
     Margins.Right = 0
@@ -1730,9 +1821,9 @@ object frmAvroMouse: TfrmAvroMouse
   end
   object BitBtn104: TBitBtn
     Tag = 2547
-    Left = 433
+    Left = 434
     Top = 126
-    Width = 32
+    Width = 33
     Height = 29
     Margins.Left = 0
     Margins.Top = 0
@@ -1744,11 +1835,27 @@ object frmAvroMouse: TfrmAvroMouse
     TabStop = False
     OnClick = BitBtn1Click
   end
+  object BitBtn107: TBitBtn
+    Tag = 8377
+    Left = 469
+    Top = 126
+    Width = 33
+    Height = 29
+    Margins.Left = 0
+    Margins.Top = 0
+    Margins.Right = 0
+    Margins.Bottom = 0
+    Caption = #8377
+    Spacing = 0
+    TabOrder = 17
+    TabStop = False
+    OnClick = BitBtn1Click
+  end
   object BitBtn105: TBitBtn
     Tag = 2544
-    Left = 468
+    Left = 504
     Top = 126
-    Width = 32
+    Width = 33
     Height = 29
     Margins.Left = 0
     Margins.Top = 0
@@ -1762,9 +1869,9 @@ object frmAvroMouse: TfrmAvroMouse
   end
   object BitBtn106: TBitBtn
     Tag = 2545
-    Left = 503
+    Left = 539
     Top = 126
-    Width = 32
+    Width = 33
     Height = 29
     Margins.Left = 0
     Margins.Top = 0
@@ -1776,13 +1883,29 @@ object frmAvroMouse: TfrmAvroMouse
     TabStop = False
     OnClick = BitBtn1Click
   end
+  object BitBtn113: TBitBtn
+    Tag = 73201
+    Left = 574
+    Top = 126
+    Width = 33
+    Height = 29
+    Margins.Left = 0
+    Margins.Top = 0
+    Margins.Right = 0
+    Margins.Bottom = 0
+    Caption = #55303#56817
+    Spacing = 0
+    TabOrder = 18
+    TabStop = False
+    OnClick = BitBtn1Click
+  end
   object btnTab: TButton
     Tag = 9
     Left = 399
     Top = 164
-    Width = 102
+    Width = 39
     Height = 25
-    Caption = 'Tab --->'
+    Caption = 'Tab'
     Font.Charset = DEFAULT_CHARSET
     Font.Color = clWindowText
     Font.Height = -11
@@ -1795,11 +1918,11 @@ object frmAvroMouse: TfrmAvroMouse
   end
   object btnBackspace: TButton
     Tag = 8
-    Left = 505
+    Left = 444
     Top = 164
-    Width = 102
+    Width = 70
     Height = 25
-    Caption = '<--- Backspace'
+    Caption = 'Backspace'
     Font.Charset = DEFAULT_CHARSET
     Font.Color = clWindowText
     Font.Height = -11
@@ -1829,9 +1952,9 @@ object frmAvroMouse: TfrmAvroMouse
   end
   object btnEnter: TButton
     Tag = 13
-    Left = 505
+    Left = 507
     Top = 194
-    Width = 102
+    Width = 101
     Height = 25
     Caption = 'Enter'
     Font.Charset = DEFAULT_CHARSET
@@ -1846,10 +1969,10 @@ object frmAvroMouse: TfrmAvroMouse
   end
   object BitBtn89: TBitBtn
     Tag = 8205
-    Left = 537
-    Top = 126
-    Width = 37
-    Height = 29
+    Left = 519
+    Top = 164
+    Width = 40
+    Height = 25
     Margins.Left = 0
     Margins.Top = 0
     Margins.Right = 0
@@ -1870,7 +1993,7 @@ object frmAvroMouse: TfrmAvroMouse
     Tag = 2404
     Left = 399
     Top = 126
-    Width = 32
+    Width = 33
     Height = 29
     Margins.Left = 0
     Margins.Top = 0

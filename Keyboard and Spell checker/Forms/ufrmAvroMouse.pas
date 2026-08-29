@@ -140,6 +140,14 @@ type
     BitBtn104: TBitBtn;
     BitBtn105: TBitBtn;
     BitBtn106: TBitBtn;
+    BitBtn107: TBitBtn;
+    BitBtn108: TBitBtn;
+    BitBtn109: TBitBtn;
+    BitBtn110: TBitBtn;
+    BitBtn111: TBitBtn;
+    BitBtn112: TBitBtn;
+    BitBtn113: TBitBtn;
+    BitBtn114: TBitBtn;
     btnTab: TButton;
     btnBackspace: TButton;
     btnSpace: TButton;
@@ -175,6 +183,10 @@ type
       function ThemeColor(const ASysColor: TColor): TColor;
       function MouseGlyphDir: string;
       function AssetMouseGlyphDir: string;
+      procedure AssignButtonTooltips;
+      function UnicodeCharName(ATag: Integer): string;
+      function UnicodeCharVersion(ATag: Integer): string;
+      function TagToDisplay(ATag: Integer): string;
     public
       { Public declarations }
     protected
@@ -205,10 +217,21 @@ const
 
 procedure TfrmAvroMouse.BitBtn1Click(Sender: TObject);
 var
-  WC: Char;
+  TagVal: Integer;
+  S: string;
 begin
-  WC := Char((Sender as TBitBtn).Tag);
-  TypeIt(WC);
+  TagVal := (Sender as TBitBtn).Tag;
+  if TagVal > $FFFF then
+  begin
+    { Astral plane character (e.g. Bengali Supplement): send as a
+      UTF-16 surrogate pair; KEYEVENTF_UNICODE recombines it. }
+    SetLength(S, 2);
+    S[1] := Char($D800 + ((TagVal - $10000) shr 10));
+    S[2] := Char($DC00 + ((TagVal - $10000) and $3FF));
+    TypeIt(S);
+  end
+  else
+    TypeIt(Char(TagVal));
 end;
 
 procedure TfrmAvroMouse.btnTabClick(Sender: TObject);
@@ -346,6 +369,7 @@ begin
   end;
 
   RegenerateGlyphs;
+  AssignButtonTooltips;
 end;
 
 function TfrmAvroMouse.DisplayTextOf(const ABtn: TBitBtn): string;
@@ -587,6 +611,194 @@ begin
       if Display <> '' then
         RenderGlyph(Btn);
     end;
+end;
+
+function TfrmAvroMouse.TagToDisplay(ATag: Integer): string;
+begin
+  if ATag > $FFFF then
+  begin
+    Result := Char($D800 + ((ATag - $10000) shr 10));
+    Result := Result + Char($DC00 + ((ATag - $10000) and $3FF));
+  end
+  else
+    Result := Char(ATag);
+end;
+
+function TfrmAvroMouse.UnicodeCharVersion(ATag: Integer): string;
+begin
+  { Version in which the code point was first assigned (UCD DerivedAge). }
+  case ATag of
+    2509: Result := '4.0';
+    2510: Result := '4.1';
+    2555: Result := '5.2';
+    8377: Result := '6.0';
+    2432: Result := '7.0';
+    2556, 2557: Result := '10.0';
+    2558: Result := '11.0';
+    73200, 73201: Result := '18.0';
+  else
+    Result := '1.1';
+  end;
+end;
+
+function TfrmAvroMouse.UnicodeCharName(ATag: Integer): string;
+begin
+  case ATag of
+    2404: Result := 'DEVANAGARI DANDA';
+    2432: Result := 'BENGALI ANJI';
+    2433: Result := 'BENGALI SIGN CANDRABINDU';
+    2434: Result := 'BENGALI SIGN ANUSVARA';
+    2435: Result := 'BENGALI SIGN VISARGA';
+    2437: Result := 'BENGALI LETTER A';
+    2438: Result := 'BENGALI LETTER AA';
+    2439: Result := 'BENGALI LETTER I';
+    2440: Result := 'BENGALI LETTER II';
+    2441: Result := 'BENGALI LETTER U';
+    2442: Result := 'BENGALI LETTER UU';
+    2443: Result := 'BENGALI LETTER VOCALIC R';
+    2444: Result := 'BENGALI LETTER VOCALIC L';
+    2447: Result := 'BENGALI LETTER E';
+    2448: Result := 'BENGALI LETTER AI';
+    2451: Result := 'BENGALI LETTER O';
+    2452: Result := 'BENGALI LETTER AU';
+    2453: Result := 'BENGALI LETTER KA';
+    2454: Result := 'BENGALI LETTER KHA';
+    2455: Result := 'BENGALI LETTER GA';
+    2456: Result := 'BENGALI LETTER GHA';
+    2457: Result := 'BENGALI LETTER NGA';
+    2458: Result := 'BENGALI LETTER CA';
+    2459: Result := 'BENGALI LETTER CHA';
+    2460: Result := 'BENGALI LETTER JA';
+    2461: Result := 'BENGALI LETTER JHA';
+    2462: Result := 'BENGALI LETTER NYA';
+    2463: Result := 'BENGALI LETTER TTA';
+    2464: Result := 'BENGALI LETTER TTHA';
+    2465: Result := 'BENGALI LETTER DDA';
+    2466: Result := 'BENGALI LETTER DDHA';
+    2467: Result := 'BENGALI LETTER NNA';
+    2468: Result := 'BENGALI LETTER TA';
+    2469: Result := 'BENGALI LETTER THA';
+    2470: Result := 'BENGALI LETTER DA';
+    2471: Result := 'BENGALI LETTER DHA';
+    2472: Result := 'BENGALI LETTER NA';
+    2474: Result := 'BENGALI LETTER PA';
+    2475: Result := 'BENGALI LETTER PHA';
+    2476: Result := 'BENGALI LETTER BA';
+    2477: Result := 'BENGALI LETTER BHA';
+    2478: Result := 'BENGALI LETTER MA';
+    2479: Result := 'BENGALI LETTER YA';
+    2480: Result := 'BENGALI LETTER RA';
+    2482: Result := 'BENGALI LETTER LA';
+    2486: Result := 'BENGALI LETTER SHA';
+    2487: Result := 'BENGALI LETTER SSA';
+    2488: Result := 'BENGALI LETTER SA';
+    2489: Result := 'BENGALI LETTER HA';
+    2492: Result := 'BENGALI SIGN NUKTA';
+    2493: Result := 'BENGALI SIGN AVAGRAHA';
+    2494: Result := 'BENGALI VOWEL SIGN AA';
+    2495: Result := 'BENGALI VOWEL SIGN I';
+    2496: Result := 'BENGALI VOWEL SIGN II';
+    2497: Result := 'BENGALI VOWEL SIGN U';
+    2498: Result := 'BENGALI VOWEL SIGN UU';
+    2499: Result := 'BENGALI VOWEL SIGN VOCALIC R';
+    2500: Result := 'BENGALI VOWEL SIGN VOCALIC RR';
+    2503: Result := 'BENGALI VOWEL SIGN E';
+    2504: Result := 'BENGALI VOWEL SIGN AI';
+    2507: Result := 'BENGALI VOWEL SIGN O';
+    2508: Result := 'BENGALI VOWEL SIGN AU';
+    2509: Result := 'BENGALI SIGN VIRAMA';
+    2510: Result := 'BENGALI LETTER KHANDA TA';
+    2519: Result := 'BENGALI AU LENGTH MARK';
+    2524: Result := 'BENGALI LETTER RRA';
+    2525: Result := 'BENGALI LETTER RHA';
+    2527: Result := 'BENGALI LETTER YYA';
+    2528: Result := 'BENGALI LETTER VOCALIC RR';
+    2529: Result := 'BENGALI LETTER VOCALIC LL';
+    2530: Result := 'BENGALI VOWEL SIGN VOCALIC L';
+    2531: Result := 'BENGALI VOWEL SIGN VOCALIC LL';
+    2534: Result := 'BENGALI DIGIT ZERO';
+    2535: Result := 'BENGALI DIGIT ONE';
+    2536: Result := 'BENGALI DIGIT TWO';
+    2537: Result := 'BENGALI DIGIT THREE';
+    2538: Result := 'BENGALI DIGIT FOUR';
+    2539: Result := 'BENGALI DIGIT FIVE';
+    2540: Result := 'BENGALI DIGIT SIX';
+    2541: Result := 'BENGALI DIGIT SEVEN';
+    2542: Result := 'BENGALI DIGIT EIGHT';
+    2543: Result := 'BENGALI DIGIT NINE';
+    2544: Result := 'BENGALI LETTER RA WITH MIDDLE DIAGONAL';
+    2545: Result := 'BENGALI LETTER RA WITH LOWER DIAGONAL';
+    2546: Result := 'BENGALI RUPEE MARK';
+    2547: Result := 'BENGALI RUPEE SIGN';
+    2548: Result := 'BENGALI CURRENCY NUMERATOR ONE';
+    2549: Result := 'BENGALI CURRENCY NUMERATOR TWO';
+    2550: Result := 'BENGALI CURRENCY NUMERATOR THREE';
+    2551: Result := 'BENGALI CURRENCY NUMERATOR FOUR';
+    2552: Result := 'BENGALI CURRENCY NUMERATOR ONE LESS THAN THE DENOMINATOR';
+    2553: Result := 'BENGALI CURRENCY DENOMINATOR SIXTEEN';
+    2554: Result := 'BENGALI ISSHAR';
+    2555: Result := 'BENGALI GANDA MARK';
+    2556: Result := 'BENGALI LETTER VEDIC ANUSVARA';
+    2557: Result := 'BENGALI ABBREVIATION SIGN';
+    2558: Result := 'BENGALI SANDHI MARK';
+    8204: Result := 'ZERO WIDTH NON-JOINER';
+    8205: Result := 'ZERO WIDTH JOINER';
+    8377: Result := 'INDIAN RUPEE SIGN';
+    73200: Result := 'BENGALI SIGN COMBINING ANUSVARA ABOVE';
+    73201: Result := 'BENGALI LETTER ALTERNATE BARGIYA BA';
+  else
+    Result := '';
+  end;
+end;
+
+procedure TfrmAvroMouse.AssignButtonTooltips;
+var
+  I: Integer;
+  Btn: TBitBtn;
+begin
+  for I := 0 to ComponentCount - 1 do
+    if Components[I] is TBitBtn then
+    begin
+      Btn := TBitBtn(Components[I]);
+      Btn.ShowHint := True;
+      if Btn.Tag <> 0 then
+        Btn.Hint := TagToDisplay(Btn.Tag) + ' - ' + UnicodeCharName(Btn.Tag) +
+          ' (Unicode ' + UnicodeCharVersion(Btn.Tag) + ')'
+      else if Btn.Name = 'But_KSs' then
+        Btn.Hint := DisplayTextOf(Btn) + ' - conjunct (KHA + VIRAMA + KA)'
+      else if Btn.Name = 'But_NGK' then
+        Btn.Hint := DisplayTextOf(Btn) + ' - conjunct (NGA + VIRAMA + KA)'
+      else if Btn.Name = 'But_NgG' then
+        Btn.Hint := DisplayTextOf(Btn) + ' - conjunct (NGA + VIRAMA + GA)'
+      else if Btn.Name = 'But_JNYA' then
+        Btn.Hint := DisplayTextOf(Btn) + ' - conjunct (JA + VIRAMA + NYA)'
+      else if Btn.Name = 'But_NYAC' then
+        Btn.Hint := DisplayTextOf(Btn) + ' - conjunct (NYA + VIRAMA + CA)'
+      else if Btn.Name = 'But_NYACh' then
+        Btn.Hint := DisplayTextOf(Btn) + ' - conjunct (NYA + VIRAMA + CHA)'
+      else if Btn.Name = 'But_NYAJ' then
+        Btn.Hint := DisplayTextOf(Btn) + ' - conjunct (NYA + VIRAMA + JA)'
+      else if Btn.Name = 'But_T_T' then
+        Btn.Hint := DisplayTextOf(Btn) + ' - conjunct (TA + VIRAMA + TA)'
+      else if Btn.Name = 'But_SsNYA' then
+        Btn.Hint := DisplayTextOf(Btn) + ' - conjunct (SSA + VIRAMA + NNA)'
+      else if Btn.Name = 'But_HM' then
+        Btn.Hint := DisplayTextOf(Btn) + ' - conjunct (HA + VIRAMA + MA)'
+      else if Btn.Name = 'But_ND' then
+        Btn.Hint := DisplayTextOf(Btn) + ' - conjunct (NNA + VIRAMA + DDA)'
+      else if Btn.Name = 'But_ZFola' then
+        Btn.Hint := 'YA-phala (ya joined to the preceding letter)'
+      else if Btn.Name = 'But_RFola' then
+        Btn.Hint := 'RA-phala (ra joined to the preceding letter)';
+    end;
+  btnTab.Hint := 'Tab';
+  btnTab.ShowHint := True;
+  btnBackspace.Hint := 'Backspace';
+  btnBackspace.ShowHint := True;
+  btnSpace.Hint := 'Space';
+  btnSpace.ShowHint := True;
+  btnEnter.Hint := 'Enter';
+  btnEnter.ShowHint := True;
 end;
 
 procedure TfrmAvroMouse.TypeIt(const tStr: string);
