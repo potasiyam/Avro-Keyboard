@@ -692,19 +692,6 @@ object frmAvroMouse: TfrmAvroMouse
       TabStop = False
       OnClick = BitBtn1Click
     end
-    object BitBtn41: TBitBtn
-      Left = 241
-      Top = 122
-      Width = 32
-      Height = 29
-      Margins.Left = 0
-      Margins.Top = 0
-      Margins.Right = 0
-      Margins.Bottom = 0
-      Spacing = 0
-      TabOrder = 39
-      TabStop = False
-    end
   end
   object Panel2: TPanel
     Left = -11
@@ -1705,9 +1692,9 @@ object frmAvroMouse: TfrmAvroMouse
   end
   object BitBtn102: TBitBtn
     Tag = 2433
-    Left = 241
-    Top = 122
-    Width = 28
+    Left = 238
+    Top = 123
+    Width = 32
     Height = 29
     Margins.Left = 0
     Margins.Top = 0

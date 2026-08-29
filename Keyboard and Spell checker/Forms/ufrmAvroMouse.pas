@@ -70,7 +70,6 @@ type
     BitBtn37: TBitBtn;
     BitBtn38: TBitBtn;
     BitBtn39: TBitBtn;
-    BitBtn41: TBitBtn;
     Panel2: TPanel;
     BitBtn40: TBitBtn;
     BitBtn42: TBitBtn;
