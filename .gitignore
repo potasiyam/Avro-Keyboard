@@ -94,3 +94,6 @@ Portable Edition/
 Source Archive/
 Standard edition/
 
+# Runtime copy of mouse glyph assets (source of truth: assets/mouse-glyphs)
+build/mouse-glyphs/
+
